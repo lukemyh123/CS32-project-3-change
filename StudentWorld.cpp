@@ -49,6 +49,8 @@ int StudentWorld::init()
                 m_actors.push_back(new DumbZombie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
             else if (name_actor == "smart_zombie")
                 m_actors.push_back(new SmartZombie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+            else if (name_actor == "citizen")
+                m_actors.push_back(new Citizen(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
         }
     }
     
@@ -189,7 +191,7 @@ bool StudentWorld::check_personInFront(double next_x, double next_y)
     {
         if ((*it)->canBeDamagedByVomit() == true)  //check whether the actors are bounder boxs collision
         {
-            cout << "citizen" << endl;
+            return true;
         }
     }
     
@@ -203,14 +205,19 @@ bool StudentWorld::check_whatCanByDamagedByVomit(double x, double y)
     if (pow(player_x - x, 2) + pow(player_y - y, 2) <= 100)
         return true;
     
-    /*vector<Actor*>::iterator it;
-     for (it = m_actors.begin(); it != m_actors.end(); it++)
-     {
-     if ((*it)->canBeDamagedByVomit())
-     return true;
-     }*/
+    vector<Actor*>::iterator it;
+    for (it = m_actors.begin(); it != m_actors.end(); it++)
+    {
+        if ((*it)->canBeDamagedByVomit())
+        {
+            if (pow((*it)->getX() - x, 2) + pow((*it)->getY() - y, 2) <= 100)
+                return true;
+        }
+    }
+    
     return false;
 }
+
 bool StudentWorld::block_Flame(double x, double y)
 {
     vector<Actor*>::iterator it;
@@ -283,7 +290,7 @@ bool StudentWorld::overlapWithVomit(double vomit_x, double vomit_y)
         {
             if (pow((*it)->getX() - vomit_x, 2) + pow((*it)->getY() - vomit_y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
             {
-                { cout << "vomitToOther" << endl; }
+                return true;
             }//(*it)->setDead();
         }
     }
@@ -392,22 +399,49 @@ void StudentWorld::compute_vomit(double x, double y, int dir)
     }
 }
 
-void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& cloest_x, double& cloest_y, double& distance)
+void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& cloest_x, double& cloest_y, double& distance, bool &isThreat)
 {
     double player_x = m_penelope->getX();   //search player location
     double player_y = m_penelope->getY();
     
-    distance = pow(player_x - zombie_x, 2) + pow(player_y - zombie_y, 2);
-    cloest_x = player_x;
-    cloest_y = player_y;
-    /*vector<Actor*>::iterator it;
+    double player_distance = pow(player_x - zombie_x, 2) + pow(player_y - zombie_y, 2);
+    double c_distance = 0;
+    
+    vector<Actor*>::iterator it;
      for (it = m_actors.begin(); it != m_actors.end(); it++)
      {
-     if((*it)->canBeDamagedByVomit() && (*it)->canBeDamagedByFlame())
-     {
-     distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+         if((*it)->canBeDamagedByVomit() && (*it)->canBeDamagedByFlame())
+         {
+             c_distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+         }
      }
-     }*/
+    
+    if(player_distance < c_distance)
+    {
+        cloest_x = player_x;
+        cloest_y = player_y;
+        distance = player_distance;
+    }
+}
+
+void StudentWorld::citizenDistanceToPlayer(double citizen_x, double citizen_y, double& player_x, double& player_y, double& distance )
+{
+    player_x = m_penelope->getX();   //search player location
+    player_y = m_penelope->getY();
+    
+     distance = pow(player_x - citizen_x, 2) + pow(player_y - citizen_y, 2);
+}
+
+void StudentWorld::citizenDistanceToNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance )
+{
+    vector<Actor*>::iterator it;
+    for (it = m_actors.begin(); it != m_actors.end(); it++)
+    {
+        if((*it)->canBeDamagedByVomit() && (*it)->canBeDamagedByFlame())
+        {
+            distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+        }
+    }
 }
 
 void StudentWorld::placeLandmine(double x, double y)
@@ -531,6 +565,9 @@ std::string StudentWorld::check_actorsPos(int x, int y)
                 break;
             case Level::landmine_goodie:
                 return "landmine_goodie";
+                break;
+            case Level::citizen:
+                return "citizen";
                 break;
             default:
                 break;

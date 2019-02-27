@@ -128,6 +128,24 @@ void Penelope::doSomething()
     }
 }
 
+Citizen::Citizen(double startX, double startY, StudentWorld * this_world)
+:Human(IID_CITIZEN, startX, startY, this_world)
+{
+    tick = 0;
+}
+
+void Citizen::doSomething()
+{
+    Human::doSomethingCom();
+    
+    tick++;
+    
+    if (tick % 2 == 0)
+        return;
+    
+    
+}
+
 Wall::Wall(double startX, double startY, StudentWorld *this_world)
 : Actor(IID_WALL, startX, startY, right, 0, this_world) {}
 
@@ -184,6 +202,7 @@ void Vomit::doSomething()
 {
     if (Projectile::doSomethingCom())
         bool temp = getWorld()->overlapWithVomit(getX(), getY());
+            
 }
 
 Googie::Googie(int imageID, double startX, double startY, StudentWorld *this_world)
@@ -449,7 +468,7 @@ SmartZombie::SmartZombie(double startX, double startY, StudentWorld *this_world)
 
 void SmartZombie::doSomething()
 {
-    getWorld()->searchCloestPeople(getX(), getY(), cloest_x, cloest_y, distance);
+    getWorld()->searchCloestPeople(getX(), getY(), cloest_x, cloest_y, distance, isThreat);
     if (distance > 6400)
     {
         Zombie::doSomethingCom();

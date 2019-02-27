@@ -39,7 +39,9 @@ public:
     
     void fire(double x, double y, int dir);
     void compute_vomit(double x, double y, int dir);
-    void searchCloestPeople(double zombie_x, double zombie_y, double& cloest_x, double& cloest_y, double& distance);
+    void searchCloestPeople(double zombie_x, double zombie_y, double& cloest_x, double& cloest_y, double& distance, bool &isThreat);
+    void citizenDistanceToPlayer(double citizen_x, double citizen_y, double& player_x, double& player_y, double& distance );
+    void citizenDistanceToNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance );
     
     void placeLandmine(double x, double y);
     void landmineBoom(double landmine_x, double landmine_y);

@@ -35,7 +35,6 @@ public:
     //virtual void doSomething() = 0;
     virtual bool isBlockActor() {return true;}
     virtual bool canBeDamagedByFlame() { return true; }
-    
 };
 
 class Human : public Agent
@@ -63,6 +62,15 @@ public:
     Penelope(double startX, double startY, StudentWorld *this_world);
     virtual void doSomething();
     //virtual bool isBlockActor() { return true; }
+};
+
+class Citizen: public Human
+{
+public:
+    Citizen(double startX, double startY, StudentWorld * this_world);
+    virtual void doSomething();
+private:
+    int tick;
 };
 
 class Wall : public Actor
@@ -214,6 +222,7 @@ private:
     double cloest_x;
     double cloest_y;
     double distance;
+    bool isThreat;
 };
 
 #endif // ACTOR_H_
