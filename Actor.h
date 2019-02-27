@@ -5,6 +5,7 @@
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 class StudentWorld;
+class Goodie;
 
 class Actor : public GraphObject
 {
@@ -12,9 +13,11 @@ public:
     Actor(int imageID, double startX, double startY, Direction dir, int depth, StudentWorld *this_world);
     virtual void doSomething() = 0;
     bool getStatus() { return object_alive; }
-    virtual void setDead() { object_alive = false; }
-    virtual void setAlive() { object_alive = true; }
+    void setDead() { object_alive = false; }
+    void setAlive() { object_alive = true; }
     StudentWorld * getWorld() { return s_world; }
+    virtual bool isHuman() {return false;}
+    virtual bool isGoodie() {return false;}
     virtual bool isBlockActor() = 0;
     virtual bool canBeDamagedByFlame() = 0;
     virtual bool canBeDamagedByVomit() { return false; }
@@ -22,10 +25,18 @@ public:
     virtual bool isAFlame() { return false; }  //----------------------
     virtual bool person() { return false; }
     
+    bool getInfection_status() { return infection_status; }
+    void addInfection() {infection++;}
+    void setInfection() { infection_status = true; }
+    void cureInfection() { infection_status = false; infection = 0;}
+    int getInfectedNumber() { return infection; }
+
     ~Actor();
 private:
     bool object_alive = true;
     StudentWorld* s_world;
+    int infection;
+    bool infection_status;
 };
 
 class Agent : public Actor
@@ -35,6 +46,12 @@ public:
     //virtual void doSomething() = 0;
     virtual bool isBlockActor() {return true;}
     virtual bool canBeDamagedByFlame() { return true; }
+    virtual bool person() {return true;}
+    virtual void follow_player(double x, double y, double player_x, double player_y, int pixel);
+    virtual void goLeft(int x, int y, int p);
+    virtual void goRight(int x, int y, int p);
+    virtual void goUp(int x, int y, int p);
+    virtual void goDown(int x, int y, int p);
 };
 
 class Human : public Agent
@@ -44,14 +61,9 @@ public:
     virtual void doSomethingCom();
     virtual void doSomething() = 0;
     virtual bool canBeDamagedByVomit() { return true; }
-    virtual bool getInfection_status() { return infection_status; }
-    virtual void setInfection() { infection_status = true; }
-    virtual void cureInfection() { infection_status = false; infection = 0;}
-    int getInfectedNumber() { return infection; }
+    virtual bool isHuman() {return true;}
     
 private:
-    int infection;
-    bool infection_status;
     
 };
 
@@ -61,7 +73,22 @@ class Penelope : public Human
 public:
     Penelope(double startX, double startY, StudentWorld *this_world);
     virtual void doSomething();
+    
+    void reset_goodies() { vaccine = 0; flamethrower = 0; landmines = 0; }
+    void add_vaccine() { vaccine++; }
+    void reduce_vaccine() { vaccine--; }
+    void add_flamethrower() { flamethrower += 5; }
+    void reduce_flamethrower() { flamethrower--; }
+    void add_landmines() { landmines += 2; }
+    void reduce_landmines() { landmines--; }
+    int get_vaccine() { return vaccine; }
+    int get_flamethrower() { return flamethrower; }
+    int get_landmines() { return landmines; }
     //virtual bool isBlockActor() { return true; }
+private:
+    int vaccine = 0;
+    int flamethrower = 0;
+    int landmines = 0;
 };
 
 class Citizen: public Human
@@ -71,6 +98,10 @@ public:
     virtual void doSomething();
 private:
     int tick;
+    double cloest_x;
+    double cloest_y;
+    double distance;
+    bool isThreat;
 };
 
 class Wall : public Actor
@@ -138,37 +169,43 @@ public:
     virtual bool isAFlame() { return false; }
 };
 
-class Googie : public Actor
+class Goodie : public Actor
 {
 public:
-    Googie(int imageID, double startX, double startY, StudentWorld *this_world);
+    Goodie(int imageID, double startX, double startY, StudentWorld *this_world);
     virtual bool doSomethingCom();
-    virtual void doSomething() = 0;
+    virtual void pickUp(Penelope* p) = 0;
     virtual bool isBlockActor() { return false; }
+    virtual bool isGoodie() {return true;}
     virtual bool canBeDamagedByFlame() { return true; }
 };
 
-class Vaccine_goodie : public Googie
+class Vaccine_goodie : public Goodie
 {
 public:
     Vaccine_goodie(double startX, double startY, StudentWorld *this_world);
     virtual void doSomething();
-    
+    virtual void pickUp(Penelope* p);
 private:
 };
 
-class Gas_can_goodie : public Googie
+class Gas_can_goodie : public Goodie
 {
 public:
     Gas_can_goodie(double startX, double startY, StudentWorld *this_world);
     virtual void doSomething();
+    virtual void pickUp(Penelope* p);
+
+private:
 };
 
-class Landmine_goodie : public Googie
+class Landmine_goodie : public Goodie
 {
 public:
     Landmine_goodie(double startX, double startY, StudentWorld *this_world);
     virtual void doSomething();
+    virtual void pickUp(Penelope* p);
+private:
 };
 
 class Landmine : public Actor
@@ -184,20 +221,13 @@ private:
     int tick = 30;
 };
 
-class Zombie : public Actor
+class Zombie : public Agent
 {
 public:
-    Zombie(int imageID, double startX, double startY, StudentWorld *this_world);
+    Zombie(double startX, double startY, StudentWorld *this_world);
     virtual void doSomethingCom();
     virtual void doSomethingVomitCom();
     virtual void doSomething() = 0;
-    virtual bool isBlockActor() { return true; }
-    virtual bool canBeDamagedByFlame() { return true; }
-    virtual bool person() { return true; }
-    virtual void goLeft();
-    virtual void goRight();
-    virtual void goUp();
-    virtual void goDown();
 private:
     int tick;
     int movement_plan;

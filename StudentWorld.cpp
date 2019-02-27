@@ -24,8 +24,8 @@ StudentWorld::~StudentWorld()
 int StudentWorld::init()
 {
     //advanceToNextLevel();
+    
     go_next_level = false; //reset the player can go to next level by exit
-    reset_goodies();
     for (int x = 0; x < SPRITE_WIDTH; x++)
     {
         for (int y = 0; y < SPRITE_HEIGHT; y++)
@@ -143,7 +143,7 @@ bool StudentWorld::check_collision_helper(double x1, double y1, double next_x, d
     else
         return false;
 }
-bool StudentWorld::check_collision(double next_x, double next_y, int dir)
+bool StudentWorld::check_collision(double next_x, double next_y, int p, int dir)
 {
     vector<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++)
@@ -152,25 +152,25 @@ bool StudentWorld::check_collision(double next_x, double next_y, int dir)
         {
             if (dir == 180)  //1 for left
             {
-                if (!((*it)->getX() == next_x + 1 && (*it)->getY() == next_y))
+                if (!((*it)->getX() == next_x + p && (*it)->getY() == next_y))
                     if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y))
                         return true;
             }
             else if (dir == 0)  //2 for right
             {
-                if (!((*it)->getX() == next_x - 1 && (*it)->getY() == next_y))               //make sure the blocking objects don't block itself;
+                if (!((*it)->getX() == next_x - p && (*it)->getY() == next_y))               //make sure the blocking objects don't block itself;
                     if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y))
                         return true;
             }
             else if (dir == 90)  //3 for up
             {
-                if (!((*it)->getX() == next_x && (*it)->getY() == next_y - 1))               //make sure the blocking objects don't block itself;
+                if (!((*it)->getX() == next_x && (*it)->getY() == next_y - p))               //make sure the blocking objects don't block itself;
                     if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y))
                         return true;
             }
             else if (dir == 270) //4 for down
             {
-                if (!((*it)->getX() == next_x && (*it)->getY() == next_y + 1))               //make sure the blocking objects don't block itself;
+                if (!((*it)->getX() == next_x && (*it)->getY() == next_y + p))               //make sure the blocking objects don't block itself;
                     if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y))
                         return true;
             }
@@ -245,11 +245,21 @@ void StudentWorld::Player_overlapWithExit(double exit_x, double exit_y)    //che
     }
 }
 
-bool StudentWorld::citizen_overlapWithExit(double exit_x, double exit_y)
+void StudentWorld::citizen_overlapWithExit(double exit_x, double exit_y)
 {
     vector<Actor*>::iterator it;
     
-    return false;
+    for (it = m_actors.begin(); it != m_actors.end(); it++)
+    {
+        if ((*it)->isHuman())// && !(*it)->isALandmine())
+        {
+            if (pow((*it)->getX() - exit_x, 2) + pow((*it)->getY() - exit_y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
+            {
+                (*it)->setDead();
+                increaseScore(500);
+            }
+        }
+    }
 }
 
 void StudentWorld::overlapWithFlame(double flame_x, double flame_y)  //damage by flame
@@ -271,39 +281,38 @@ void StudentWorld::overlapWithFlame(double flame_x, double flame_y)  //damage by
     }
 }
 
-bool StudentWorld::overlapWithVomit(double vomit_x, double vomit_y)
+void StudentWorld::overlapWithVomit(double vomit_x, double vomit_y)
 {
     double player_x = m_penelope->getX();   //check if player are overlap with Vomit
     double player_y = m_penelope->getY();
     if (pow(player_x - vomit_x, 2) + pow(player_y - vomit_y, 2) <= 100)
     {
         if (m_penelope->getInfection_status() == false)
-            m_penelope->setInfection();   //set infection
-        return true;
+            m_penelope->setInfection();   //set infection for penelope
     }
     
     vector<Actor*>::iterator it;
     
     for (it = m_actors.begin(); it != m_actors.end(); it++)
     {
-        if ((*it)->canBeDamagedByVomit())
+        if ((*it)->isHuman())
         {
             if (pow((*it)->getX() - vomit_x, 2) + pow((*it)->getY() - vomit_y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
             {
-                return true;
-            }//(*it)->setDead();
+                if ((*it)->getInfection_status() == false)
+                    (*it)->setInfection();
+                //cout << "set infection for citizen;" << endl;   //set infection for citizen;
+            }
         }
     }
-    
-    return false;
 }
 
-bool StudentWorld::Player_overlapWith_Goodies(double goodies_x, double goodies_y)
+bool StudentWorld::Player_overlapWith_Goodies(double x, double y)
 {
     double player_x = m_penelope->getX();   //check if player are overlap with goodies
     double player_y = m_penelope->getY();
     
-    if (pow(player_x - goodies_x, 2) + pow(player_y - goodies_y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
+    if (pow(player_x - x, 2) + pow(player_y - y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
     {
         increaseScore(50);
         return true;
@@ -405,23 +414,48 @@ void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& 
     double player_y = m_penelope->getY();
     
     double player_distance = pow(player_x - zombie_x, 2) + pow(player_y - zombie_y, 2);
-    double c_distance = 0;
+    double temp_distance = 0;
+    double cloest_distance = 0;
     
     vector<Actor*>::iterator it;
+    
+    //push the first citizen's distance into the temp_distance;
+    for (it = m_actors.begin(); it != m_actors.end(); it++)
+    {
+        if((*it)->isHuman())
+        {
+            cloest_distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+            break;
+        }
+    }
+    
      for (it = m_actors.begin(); it != m_actors.end(); it++)
      {
-         if((*it)->canBeDamagedByVomit() && (*it)->canBeDamagedByFlame())
+         if((*it)->isHuman())
          {
-             c_distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+             //cout << "Citizen" << endl;
+             temp_distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+             if(cloest_distance>temp_distance)
+             {
+                 cloest_distance = temp_distance;
+                 cloest_x = (*it)->getX();
+                 cloest_y = (*it)->getY();
+             }
+             
+             if(player_distance < cloest_distance)
+             {
+                 cloest_x = player_x;
+                 cloest_y = player_y;
+                 distance = player_distance;
+             }
+             else
+             {
+                 distance = cloest_distance;
+             }
          }
      }
     
-    if(player_distance < c_distance)
-    {
-        cloest_x = player_x;
-        cloest_y = player_y;
-        distance = player_distance;
-    }
+    
 }
 
 void StudentWorld::citizenDistanceToPlayer(double citizen_x, double citizen_y, double& player_x, double& player_y, double& distance )
@@ -444,10 +478,19 @@ void StudentWorld::citizenDistanceToNearestZombie(double citizen_x, double citiz
     }
 }
 
+void StudentWorld::createAZombie(double x, double y)
+{
+    int temp = randInt(1, 10);
+    if(temp <= 3)
+        m_actors.push_back(new SmartZombie(x, y, this));
+    else
+        m_actors.push_back(new DumbZombie(x, y, this));
+}
+
+
 void StudentWorld::placeLandmine(double x, double y)
 {
     m_actors.push_back(new Landmine(x, y, this));
-    reduce_landmines();
 }
 
 bool StudentWorld::overlapwithLandmine(double x, double y)
@@ -509,8 +552,8 @@ void StudentWorld::setGame_info()
     
     //Score:    004500        Level:    27        Lives:    3        Vaccines:    2        Flames:    16        Mines:    1        Infected:    0
     oss << "Score: " << setw(2) << getScore() << "  Level: " << setw(2) << getLevel() << "  Lives: " << setw(2) << getLives()
-    << "  Vaccines: " << setw(2) << get_vaccine() << "  Flames; " << setw(2) << get_flamethrower()
-    << "  Mines: " << setw(2) << get_landmines() << "  Infected: " << setw(2) << m_penelope->getInfectedNumber();
+    << "  Vaccines: " << setw(2) << m_penelope->get_vaccine() << "  Flames; " << setw(2) << m_penelope->get_flamethrower()
+    << "  Mines: " << setw(2) << m_penelope->get_landmines() << "  Infected: " << setw(2) << m_penelope->getInfectedNumber();
     setGameStatText(oss.str());
 }
 
@@ -525,8 +568,7 @@ std::string StudentWorld::check_actorsPos(int x, int y)
     Level::LoadResult result = lev.loadLevel(levelFile);
     if (result == Level::load_fail_file_not_found)
     {
-        cerr << "Cannot find level01.txt data file" << endl;  // gameover
-        exit(1);  //need to change
+        return "error";
     }
     else if (result == Level::load_fail_bad_format)
         cerr << "Your level was improperly formatted" << endl;

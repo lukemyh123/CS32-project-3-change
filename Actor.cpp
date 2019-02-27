@@ -4,7 +4,10 @@
 // Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
 Actor::Actor(int imageID, double startX, double startY, Direction dir, int depth, StudentWorld *this_world)
 :GraphObject(imageID, startX, startY, dir, depth), s_world(this_world)
-{}
+{
+    infection = 0;
+    infection_status = false;
+}
 
 Actor::~Actor() {}
 
@@ -13,13 +16,118 @@ Agent::Agent(int imageID, double startX, double startY, StudentWorld *this_world
 {
     setAlive();
 }
+void Agent::goLeft(int x, int y, int p)
+{
+    setDirection(left);
+    if (!getWorld()->check_collision(x - p, y, p, left))
+    {
+        moveTo(x - p, y);
+    }
+}
+void Agent::goRight(int x, int y, int p)
+{
+    setDirection(right);
+    if (!getWorld()->check_collision(x + p, y, p, right))
+    {
+        moveTo(x + p, y);
+    }
+}
+void Agent::goUp(int x, int y, int p)
+{
+    setDirection(up);
+    if (!getWorld()->check_collision(x, y + p, p, up))
+    {
+        moveTo(x, y + p);
+    }
+}
+void Agent::goDown(int x, int y, int p)
+{
+    setDirection(down);
+    if (!getWorld()->check_collision(x, y - p, p, down))
+    {
+        moveTo(x, y - p);
+    }
+}
+void Agent::follow_player(double x, double y, double player_x, double player_y, int pixel)
+{
+    if (player_x == x)
+    {
+        if (player_y > y)
+        {
+            goUp(x, y, pixel);
+        }
+        else if (player_y < y)
+        {
+            goDown(x, y, pixel);
+        }
+    }
+    
+    if (player_y == y)
+    {
+        if (player_x < x)
+        {
+            goLeft(x, y, pixel);
+        }
+        else if (player_x > x)
+        {
+            goRight(x, y, pixel);
+        }
+    }
+    
+    if (player_y > y && player_x < x)  //up left
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            goLeft(x, y, pixel);
+        }
+        else             //vertical
+        {
+            goUp(x, y, pixel);
+        }
+    }
+    if (player_y > y && player_x > x) // up right
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            goRight(x, y, pixel);
+        }
+        else             //vertical
+        {
+            goUp(x, y, pixel);
+        }
+    }
+    if (player_y < y && player_x < x) //down left
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            goLeft(x, y, pixel);
+        }
+        else             //vertical
+        {
+            goDown(x, y, pixel);
+        }
+    }
+    if (player_y < y && player_x > x) // down right
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            goRight(x, y, pixel);
+        }
+        else             //vertical
+        {
+            goDown(x, y, pixel);
+        }
+    }
+   // Zombie::doSomethingVomitCom();
+}
 
 Human::Human(int imageID, double startX, double startY, StudentWorld *this_world)
 : Agent(imageID, startX,startY, this_world)
-{
-    infection = 0;
-    infection_status = false;
-}
+{}
 
 void Human::doSomethingCom()
 {
@@ -27,16 +135,21 @@ void Human::doSomethingCom()
         return;
     
     if (getInfection_status() == true)
-        infection++;
-    else
-        infection = 0;
+        addInfection();
     
-    if (infection == 500)
+    if (getInfectedNumber() == 500)
+    {
         setDead();
+        getWorld()->createAZombie(getX(), getY());
+        getWorld()->playSound(SOUND_ZOMBIE_BORN);
+    }
     
 }
 Penelope::Penelope(double startX, double startY, StudentWorld *this_world)
-: Human(IID_PLAYER, startX, startY, this_world){}
+: Human(IID_PLAYER, startX, startY, this_world)
+{
+    reset_goodies();
+}
 
 void Penelope::doSomething()
 {
@@ -88,40 +201,43 @@ void Penelope::doSomething()
                     moveTo(getX(), getY() - 4);
                 break;
             case KEY_PRESS_SPACE:
-                if (getDirection() == left && getWorld()->get_flamethrower() != 0)
+                if (getDirection() == left && get_flamethrower() != 0)
                 {
                     getWorld()->fire(getX(), getY(), 1);
-                    getWorld()->reduce_flamethrower();
+                    reduce_flamethrower();
                     //std::cout <<" Fire " << std::endl;  //produce fire;
                 }
-                else if (getDirection() == right && getWorld()->get_flamethrower() != 0)
+                else if (getDirection() == right && get_flamethrower() != 0)
                 {
                     getWorld()->fire(getX(), getY(), 2);
-                    getWorld()->reduce_flamethrower();
+                    reduce_flamethrower();
                     //std::cout <<" Fire " << std::endl;  //produce fire;
                 }
-                else if (getDirection() == up && getWorld()->get_flamethrower() != 0)
+                else if (getDirection() == up && get_flamethrower() != 0)
                 {
                     getWorld()->fire(getX(), getY(), 3);
-                    getWorld()->reduce_flamethrower();
+                    reduce_flamethrower();
                     //std::cout <<" Fire " << std::endl;  //produce fire;
                 }
-                else if (getDirection() == down && getWorld()->get_flamethrower() != 0)
+                else if (getDirection() == down && get_flamethrower() != 0)
                 {
                     getWorld()->fire(getX(), getY(), 4);
-                    getWorld()->reduce_flamethrower();
+                    reduce_flamethrower();
                     //std::cout <<" Fire " << std::endl;  //produce fire;
                 }
                 break;
             case KEY_PRESS_TAB:
-                if (getWorld()->get_landmines() != 0)
+                if (get_landmines() != 0)
+                {
+                    reduce_landmines();
                     getWorld()->placeLandmine(getX(), getY());
+                }
                 break;
             case KEY_PRESS_ENTER:
-                if (getWorld()->get_vaccine() != 0)
+                if (get_vaccine() != 0)
                 {
                     cureInfection();
-                    getWorld()->reduce_vaccine();
+                    reduce_vaccine();
                 }
                 break;
         }
@@ -143,6 +259,12 @@ void Citizen::doSomething()
     if (tick % 2 == 0)
         return;
     
+    getWorld()->citizenDistanceToPlayer(getX(), getY(), cloest_x, cloest_y, distance);
+    if (distance <= 6400)
+    {
+        follow_player(getX(), getY(), cloest_x, cloest_y, 2);
+    }
+    
     
 }
 
@@ -157,11 +279,8 @@ void Exit::doSomething()
 {
     getWorld()->Player_overlapWithExit(getX(), getY());   //If the player is overlap with Exit and no more citizen, goes to next level
     //getWorld()->check_FlameoverlapWithExit(getX(), getY()); //flame overlap with Exit, block flame
-    //std::cout << "exit blocks flame" << std::endl;
     
-    if (getWorld()->citizen_overlapWithExit(getX(), getY()) == true)  //If the citizen are overlap with Eixt, destory them ,and add score
-        std::cout << "Delete citizen" << std::endl;
-    
+    getWorld()->citizen_overlapWithExit(getX(), getY()); //If the citizen are overlap with Eixt, destory them ,and add score
 }
 
 Pit::Pit(double startX, double startY, StudentWorld *this_world)
@@ -201,22 +320,23 @@ Vomit::Vomit(double startX, double startY, StudentWorld *this_world)
 void Vomit::doSomething()
 {
     if (Projectile::doSomethingCom())
-        bool temp = getWorld()->overlapWithVomit(getX(), getY());
+        getWorld()->overlapWithVomit(getX(), getY());
             
 }
 
-Googie::Googie(int imageID, double startX, double startY, StudentWorld *this_world)
+Goodie::Goodie(int imageID, double startX, double startY, StudentWorld *this_world)
 : Actor(imageID, startX, startY, right, 1, this_world)
 {
     setAlive();
 }
-bool Googie::doSomethingCom()
+bool Goodie::doSomethingCom()
 {
     if (getStatus() == false)
         return false;
     
-    if (getWorld()->Player_overlapWith_Goodies(getX(), getY()))
+   if (getWorld()->Player_overlapWith_Goodies(getX(), getY()))
     {
+        pickUp(getWorld()->getPenelope());
         setDead();
         return true;
     }
@@ -224,27 +344,48 @@ bool Googie::doSomethingCom()
 }
 
 Vaccine_goodie::Vaccine_goodie(double startX, double startY, StudentWorld *this_world)
-: Googie(IID_VACCINE_GOODIE, startX, startY, this_world) {}
+: Goodie(IID_VACCINE_GOODIE, startX, startY, this_world) {}
 void Vaccine_goodie::doSomething()
 {
-    if (Googie::doSomethingCom())
-        getWorld()->add_vaccine();
+    if (Goodie::doSomethingCom())
+        std::cout<< "Vaccine" << std::endl;
+        return;
+        //Penelope::add_vaccine();
+}
+
+void Vaccine_goodie::pickUp(Penelope *p)
+{
+    p->add_vaccine();
 }
 
 Gas_can_goodie::Gas_can_goodie(double startX, double startY, StudentWorld *this_world)
-: Googie(IID_GAS_CAN_GOODIE, startX, startY, this_world) {}
+: Goodie(IID_GAS_CAN_GOODIE, startX, startY, this_world) {}
 void Gas_can_goodie::doSomething()
 {
-    if (Googie::doSomethingCom())
-        getWorld()->add_flamethrower();
+    if (Goodie::doSomethingCom())
+        std::cout<< "Gas_can_goodie" << std::endl;
+
+        return;
+       // Penelope::add_flamethrower();
+}
+
+void Gas_can_goodie::pickUp(Penelope *p)
+{
+    p->add_flamethrower();
 }
 
 Landmine_goodie::Landmine_goodie(double startX, double startY, StudentWorld *this_world)
-: Googie(IID_LANDMINE_GOODIE, startX, startY, this_world) {}
+: Goodie(IID_LANDMINE_GOODIE, startX, startY, this_world) {}
 void Landmine_goodie::doSomething()
 {
-    if (Googie::doSomethingCom())
-        getWorld()->add_landmines();
+    if (Goodie::doSomethingCom())
+        std::cout<< "Landmine_goodie" << std::endl;
+
+        return;       //Penelope::add_landmines();
+}
+void Landmine_goodie::pickUp(Penelope *p)
+{
+    p->add_landmines();
 }
 
 Landmine::Landmine(double startX, double startY, StudentWorld *this_world)
@@ -269,8 +410,8 @@ void Landmine::doSomething()
     //return;
 }
 
-Zombie::Zombie(int imageID, double startX, double startY, StudentWorld *this_world)
-: Actor(imageID, startX, startY, right, 0, this_world)
+Zombie::Zombie(double startX, double startY, StudentWorld *this_world)
+: Agent(IID_ZOMBIE, startX, startY, this_world)
 {
     setAlive();
     movement_plan = 0;
@@ -298,7 +439,7 @@ void Zombie::doSomethingCom()
         if (rand_dir == 1)
         {
             setDirection(up);
-            if (!getWorld()->check_collision(getX(), getY() + 1, up))
+            if (!getWorld()->check_collision(getX(), getY() + 1, 1, up))
             {
                 moveTo(getX(), getY() + 1);
                 movement_plan--;
@@ -309,7 +450,7 @@ void Zombie::doSomethingCom()
         else if (rand_dir == 2)
         {
             setDirection(down);
-            if (!getWorld()->check_collision(getX(), getY() - 1, down))
+            if (!getWorld()->check_collision(getX(), getY() - 1, 1, down))
             {
                 moveTo(getX(), getY() - 1);
                 movement_plan--;
@@ -320,7 +461,7 @@ void Zombie::doSomethingCom()
         else if (rand_dir == 3)
         {
             setDirection(left);
-            if (!getWorld()->check_collision(getX() - 1, getY(), left))
+            if (!getWorld()->check_collision(getX() - 1, getY(),1, left))
             {
                 moveTo(getX() - 1, getY());
                 movement_plan--;
@@ -331,7 +472,7 @@ void Zombie::doSomethingCom()
         else if (rand_dir == 4)
         {
             setDirection(right);
-            if (!getWorld()->check_collision(getX() + 1, getY(), right))
+            if (!getWorld()->check_collision(getX() + 1, getY(),1, right))
             {
                 moveTo(getX() + 1, getY());
                 movement_plan--;
@@ -351,16 +492,14 @@ void Zombie::doSomethingVomitCom()
     {
         if (getWorld()->check_personInFront(getX(), getY() + SPRITE_HEIGHT))
         {
-            getWorld()->compute_vomit(getX(), getY(), up);
-            if (getWorld()->overlapWithVomit(getX(), getY() + SPRITE_HEIGHT))
+            
+            int temp = randInt(1, 3);
+            if (temp == 1)
             {
-                int temp = randInt(1, 3);
-                if (temp == 1)
-                {
-                    getWorld()->compute_vomit(getX(), getY(), up);
-                    return;
-                }
+                getWorld()->compute_vomit(getX(), getY(), up);
+                return;
             }
+            
         }
     }
     
@@ -368,15 +507,11 @@ void Zombie::doSomethingVomitCom()
     {
         if (getWorld()->check_personInFront(getX(), getY() - SPRITE_HEIGHT))
         {
-            getWorld()->compute_vomit(getX(), getY(), down);
-            if (getWorld()->overlapWithVomit(getX(), getY() - SPRITE_HEIGHT))
+            int temp = randInt(1, 3);
+            if (temp == 1)
             {
-                int temp = randInt(1, 3);
-                if (temp == 1)
-                {
-                    getWorld()->compute_vomit(getX(), getY(), down);
-                    return;
-                }
+                getWorld()->compute_vomit(getX(), getY(), down);
+                return;
             }
         }
         
@@ -386,16 +521,13 @@ void Zombie::doSomethingVomitCom()
     {
         if (getWorld()->check_personInFront(getX() - SPRITE_WIDTH, getY()))
         {
-            getWorld()->compute_vomit(getX(), getY(), left);
-            if (getWorld()->overlapWithVomit(getX() - SPRITE_WIDTH, getY()))
+            int temp = randInt(1, 3);
+            if (temp == 1)
             {
-                int temp = randInt(1, 3);
-                if (temp == 1)
-                {
-                    getWorld()->compute_vomit(getX(), getY(), left);
-                    return;
-                }
+                getWorld()->compute_vomit(getX(), getY(), left);
+                return;
             }
+        
         }
     }
     
@@ -403,57 +535,19 @@ void Zombie::doSomethingVomitCom()
     {
         if (getWorld()->check_personInFront(getX() + SPRITE_WIDTH, getY()))
         {
-            getWorld()->compute_vomit(getX(), getY(), right);
-            if (getWorld()->overlapWithVomit(getX() + SPRITE_WIDTH, getY()))
+            int temp = randInt(1, 3);
+            if (temp == 1)
             {
-                int temp = randInt(1, 3);
-                if (temp == 1)
-                {
-                    getWorld()->compute_vomit(getX(), getY(), right);
-                    return;
-                }
+                getWorld()->compute_vomit(getX(), getY(), right);
+                return;
             }
+            
         }
-    }
-}
-void Zombie::goUp()
-{
-    setDirection(up);
-    if (!getWorld()->check_collision(getX(), getY() + 1, up))
-    {
-        moveTo(getX(), getY() + 1);
-    }
-}
-
-void Zombie::goDown()
-{
-    setDirection(down);
-    if (!getWorld()->check_collision(getX(), getY() - 1, down))
-    {
-        moveTo(getX(), getY() - 1);
-    }
-}
-
-void Zombie::goLeft()
-{
-    setDirection(left);
-    if (!getWorld()->check_collision(getX() - 1, getY(), left))
-    {
-        moveTo(getX() - 1, getY());
-    }
-}
-
-void Zombie::goRight()
-{
-    setDirection(right);
-    if (!getWorld()->check_collision(getX() + 1, getY(), right))
-    {
-        moveTo(getX() + 1, getY());
     }
 }
 
 DumbZombie::DumbZombie(double startX, double startY, StudentWorld *this_world)
-:Zombie(IID_ZOMBIE, startX, startY, this_world) {}
+:Zombie(startX, startY, this_world) {}
 
 void DumbZombie::doSomething()
 {
@@ -461,7 +555,7 @@ void DumbZombie::doSomething()
 }
 
 SmartZombie::SmartZombie(double startX, double startY, StudentWorld *this_world)
-:Zombie(IID_ZOMBIE, startX, startY, this_world)
+:Zombie(startX, startY, this_world)
 {
     tick = 0;
 }
@@ -482,78 +576,7 @@ void SmartZombie::doSomething()
         
         // if (tick % 2 != 0)
         //{
-        if (cloest_x == getX())
-        {
-            if (cloest_y > getY())
-            {
-                Zombie::goUp();
-            }
-            else if (cloest_y < getY())
-            {
-                Zombie::goDown();
-            }
-        }
-        
-        if (cloest_y == getY())
-        {
-            if (cloest_x < getY())
-            {
-                Zombie::goLeft();
-            }
-            else if (cloest_x > getY())
-            {
-                Zombie::goRight();
-            }
-        }
-        
-        if (cloest_y > getY() && cloest_x < getX())  //up left
-        {
-            int randDir = randInt(1, 2);
-            if (randDir == 1)  //horizontal
-            {
-                Zombie::goLeft();
-            }
-            else             //vertical
-            {
-                Zombie::goUp();
-            }
-        }
-        if (cloest_y > getY() && cloest_x > getX()) // up right
-        {
-            int randDir = randInt(1, 2);
-            if (randDir == 1)  //horizontal
-            {
-                Zombie::goRight();
-            }
-            else             //vertical
-            {
-                Zombie::goUp();
-            }
-        }
-        if (cloest_y < getY() && cloest_x < getX()) //down left
-        {
-            int randDir = randInt(1, 2);
-            if (randDir == 1)  //horizontal
-            {
-                Zombie::goLeft();
-            }
-            else             //vertical
-            {
-                Zombie::goDown();
-            }
-        }
-        if (cloest_y < getY() && cloest_x > getX()) // down right
-        {
-            int randDir = randInt(1, 2);
-            if (randDir == 1)  //horizontal
-            {
-                Zombie::goRight();
-            }
-            else             //vertical
-            {
-                Zombie::goDown();
-            }
-        }
+        follow_player(getX(), getY(), cloest_x, cloest_y, 1);
         Zombie::doSomethingVomitCom();
     }
     //std::cout << distance << std::endl;
