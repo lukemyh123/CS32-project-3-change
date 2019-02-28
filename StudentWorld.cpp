@@ -23,11 +23,10 @@ StudentWorld::~StudentWorld()
 
 int StudentWorld::init()
 {
-	//advanceToNextLevel();
 	Level lev(assetPath());
 	ostringstream oss;
-	//oss << "level0" << getLevel() << ".txt";
-	oss << "level0" << 4 << ".txt";
+	oss << "level0" << getLevel() << ".txt";
+	//oss << "level0" << 2 << ".txt";
 	string levelFile = oss.str();
 
 	Level::LoadResult result = lev.loadLevel(levelFile);
@@ -104,7 +103,6 @@ int StudentWorld::move()
 	if (m_penelope->getStatus())
 		m_penelope->doSomething();
 
-	cout << num_citizen << endl;
 	list<Actor*>::iterator it;  //delete all actors
 	for (it = m_actors.begin(); it != m_actors.end();)
 	{
@@ -526,7 +524,7 @@ void StudentWorld::searchNearestZombie(double citizen_x, double citizen_y, doubl
 {
 	double temp_distance = 0;
 	double cloest_distance = 6400;
-	distance = 6400;
+	//distance = 6400;
 	list<Actor*>::iterator it;
 
 	for (it = m_actors.begin(); it != m_actors.end(); it++)
@@ -552,8 +550,6 @@ void StudentWorld::searchNearestZombie(double citizen_x, double citizen_y, doubl
 			}
 		}
 	}
-
-
 }
 
 void StudentWorld::citizenDistanceToPlayer(double citizen_x, double citizen_y, double& player_x, double& player_y, double& distance)

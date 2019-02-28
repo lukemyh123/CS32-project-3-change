@@ -421,17 +421,24 @@ void Citizen::doSomething()
 		return;
 
 	getWorld()->citizenDistanceToPlayer(getX(), getY(), player_x, player_y, distanceFromPlayer);
-	getWorld()->searchNearestZombie(getX(), getY(), zombie_x, zombie_y, distanceFromNearestZombie);
+	getWorld()->searchNearestZombie(getX(), getY(), zombie_x, zombie_y, distanceFromNearestZombie); //have zombies
 
-	if (distanceFromPlayer < distanceFromNearestZombie && distanceFromPlayer <= 6400)
+	if (zombie_x == 0 && zombie_y == 0)
 	{
-		follow_player(getX(), getY(), player_x, player_y, 2);
-		return;
+		if (distanceFromPlayer <= 6400)
+			follow_player(getX(), getY(), player_x, player_y, 2);
 	}
-	if (distanceFromNearestZombie <= 6400)
+	else
 	{
-		runAwayFromZombie(getX(), getY(), zombie_x, zombie_y, 2);
-		return;
+		if (distanceFromPlayer < distanceFromNearestZombie && distanceFromPlayer <= 6400)
+		{
+			follow_player(getX(), getY(), player_x, player_y, 2);
+		}
+		if (distanceFromNearestZombie <= 6400)
+		{
+			runAwayFromZombie(getX(), getY(), zombie_x, zombie_y, 2);
+			return;
+		}
 	}
 }
 
