@@ -26,7 +26,7 @@ int StudentWorld::init()
 	Level lev(assetPath());
 	ostringstream oss;
 	oss << "level0" << getLevel() << ".txt";
-	//oss << "level0" << 2 << ".txt";
+	//oss << "level0" << 4 << ".txt";
 	string levelFile = oss.str();
 
 	Level::LoadResult result = lev.loadLevel(levelFile);
@@ -522,6 +522,8 @@ void StudentWorld::searchClosestPeople(double x, double y, double& cloest_x, dou
 
 void StudentWorld::searchNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance)
 {
+	zombie_x = 0;
+	zombie_y = 0;
 	double temp_distance = 0;
 	double cloest_distance = 6400;
 	//distance = 6400;
