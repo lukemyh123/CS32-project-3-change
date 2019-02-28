@@ -17,6 +17,8 @@ public:
     void setAlive() { object_alive = true; }
     StudentWorld * getWorld() { return s_world; }
     virtual bool isHuman() {return false;}
+    virtual bool isZombie() {return false;}
+    
     virtual bool isGoodie() {return false;}
     virtual bool isBlockActor() = 0;
     virtual bool canBeDamagedByFlame() = 0;
@@ -48,6 +50,7 @@ public:
     virtual bool canBeDamagedByFlame() { return true; }
     virtual bool person() {return true;}
     virtual void follow_player(double x, double y, double player_x, double player_y, int pixel);
+    virtual void runAwayFromZombie(double x, double y, double zombie_x, double zombie_y, int pixel);
     virtual void goLeft(int x, int y, int p);
     virtual void goRight(int x, int y, int p);
     virtual void goUp(int x, int y, int p);
@@ -98,9 +101,12 @@ public:
     virtual void doSomething();
 private:
     int tick;
-    double cloest_x;
-    double cloest_y;
-    double distance;
+    double player_x;
+    double player_y;
+    double zombie_x;
+    double zombie_y;
+    double distanceFromPlayer;
+    double distanceFromNearestZombie;
     bool isThreat;
 };
 
@@ -228,6 +234,7 @@ public:
     virtual void doSomethingCom();
     virtual void doSomethingVomitCom();
     virtual void doSomething() = 0;
+    virtual bool isZombie() {return true;}
 private:
     int tick;
     int movement_plan;

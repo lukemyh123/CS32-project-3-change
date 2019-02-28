@@ -24,34 +24,67 @@ StudentWorld::~StudentWorld()
 int StudentWorld::init()
 {
     //advanceToNextLevel();
+    Level lev(assetPath());
+    ostringstream oss;
+    //oss << "level0" << getLevel() << ".txt";
+    oss << "level0" << 2 << ".txt";
+    string levelFile = oss.str();
     
-    go_next_level = false; //reset the player can go to next level by exit
-    for (int x = 0; x < SPRITE_WIDTH; x++)
+    Level::LoadResult result = lev.loadLevel(levelFile);
+    if (result == Level::load_fail_file_not_found)
     {
-        for (int y = 0; y < SPRITE_HEIGHT; y++)
+        return GWSTATUS_LEVEL_ERROR;
+    }
+    else if (result == Level::load_fail_bad_format)
+        cerr << "Your level was improperly formatted" << endl;
+    else if (result == Level::load_success)
+    {
+        //cerr << "Successfully loaded level" << endl;
+        go_next_level = false; //reset the player can go to next level by exit
+
+        for (int x = 0; x < SPRITE_WIDTH; x++)
         {
-            string name_actor = check_actorsPos(x, y);
-            if (name_actor == "wall")
-                m_actors.push_back(new Wall(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "player")
-                m_penelope = new Penelope(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this);
-            else if (name_actor == "exit")
-                m_actors.push_back(new Exit(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "pit")
-                m_actors.push_back(new Pit(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "vaccine_goodie")
-                m_actors.push_back(new Vaccine_goodie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "gas_can_goodie")
-                m_actors.push_back(new Gas_can_goodie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "landmine_goodie")
-                m_actors.push_back(new Landmine_goodie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "dumb_zombie")
-                m_actors.push_back(new DumbZombie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "smart_zombie")
-                m_actors.push_back(new SmartZombie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
-            else if (name_actor == "citizen")
-                m_actors.push_back(new Citizen(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+            for (int y = 0; y < SPRITE_HEIGHT; y++)
+            {
+                Level::MazeEntry ge = lev.getContentsOf(x, y); // level_x=5, level_y=10
+                switch (ge) // so x=80 and y=160
+                {
+                    case Level::smart_zombie:
+                        m_actors.push_back(new SmartZombie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::dumb_zombie:
+                        m_actors.push_back(new DumbZombie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::player:
+                        m_penelope = new Penelope(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this);
+                        break;
+                    case Level::exit:
+                        m_actors.push_back(new Exit(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::wall:
+                        m_actors.push_back(new Wall(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::pit:
+                        m_actors.push_back(new Pit(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::vaccine_goodie:
+                        m_actors.push_back(new Vaccine_goodie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::gas_can_goodie:
+                        m_actors.push_back(new Gas_can_goodie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::landmine_goodie:
+                        m_actors.push_back(new Landmine_goodie(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    case Level::citizen:
+                        m_actors.push_back(new Citizen(SPRITE_WIDTH * x, SPRITE_HEIGHT * y, this));
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
+        
     }
     
     return GWSTATUS_CONTINUE_GAME;
@@ -91,6 +124,7 @@ int StudentWorld::move()
     //cout << Player_dead() << endl;
     if (m_penelope->getStatus() == false)
     {
+        playSound(SOUND_PLAYER_DIE);
         decLives();
         return GWSTATUS_PLAYER_DIED;
     }
@@ -255,6 +289,7 @@ void StudentWorld::citizen_overlapWithExit(double exit_x, double exit_y)
         {
             if (pow((*it)->getX() - exit_x, 2) + pow((*it)->getY() - exit_y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
             {
+                playSound(SOUND_CITIZEN_SAVED);
                 (*it)->setDead();
                 increaseScore(500);
             }
@@ -314,6 +349,7 @@ bool StudentWorld::Player_overlapWith_Goodies(double x, double y)
     
     if (pow(player_x - x, 2) + pow(player_y - y, 2) <= 100)  //overlap(x1-x2)^2 + (y1-y2)^2 ≤ 10^2
     {
+        playSound(SOUND_GOT_GOODIE);
         increaseScore(50);
         return true;
     }
@@ -386,6 +422,7 @@ void StudentWorld::fire(double x, double y, int dir)
 
 void StudentWorld::compute_vomit(double x, double y, int dir)
 {
+    //playSound(SOUND_ZOMBIE_VOMIT);
     if (dir == 180)  //180 for left
     {
         if (check_whatCanByDamagedByVomit(x - SPRITE_WIDTH, y))
@@ -408,12 +445,12 @@ void StudentWorld::compute_vomit(double x, double y, int dir)
     }
 }
 
-void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& cloest_x, double& cloest_y, double& distance, bool &isThreat)
+void StudentWorld::searchCloestPeople(double x, double y, double& cloest_x, double& cloest_y, double& distance, bool &isThreat)
 {
     double player_x = m_penelope->getX();   //search player location
     double player_y = m_penelope->getY();
     
-    double player_distance = pow(player_x - zombie_x, 2) + pow(player_y - zombie_y, 2);
+    double player_distance = pow(player_x - x, 2) + pow(player_y - y, 2);
     double temp_distance = 0;
     double cloest_distance = 0;
     
@@ -424,7 +461,7 @@ void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& 
     {
         if((*it)->isHuman())
         {
-            cloest_distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+            cloest_distance = pow((*it)->getX() - x, 2) + pow((*it)->getY() - y, 2);
             break;
         }
     }
@@ -433,8 +470,7 @@ void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& 
      {
          if((*it)->isHuman())
          {
-             //cout << "Citizen" << endl;
-             temp_distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
+             temp_distance = pow((*it)->getX() - x, 2) + pow((*it)->getY() - y, 2);
              if(cloest_distance>temp_distance)
              {
                  cloest_distance = temp_distance;
@@ -454,8 +490,39 @@ void StudentWorld::searchCloestPeople(double zombie_x, double zombie_y, double& 
              }
          }
      }
+}
+
+void StudentWorld::searchNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance )
+{
+    double temp_distance = 0;
+    double cloest_distance = 0;
+    vector<Actor*>::iterator it;
+    for (it = m_actors.begin(); it != m_actors.end(); it++)
+    {
+        if((*it)->isZombie())
+        {
+            cloest_distance = pow((*it)->getX() - citizen_x, 2) + pow((*it)->getY() - citizen_y, 2);
+            break;
+        }
+    }
     
-    
+    //double temp[3];
+    for (it = m_actors.begin(); it != m_actors.end(); it++)
+    {
+        if((*it)->isZombie())
+        {
+            temp_distance = pow((*it)->getX() - citizen_x, 2) + pow((*it)->getY() - citizen_y, 2);
+            if(cloest_distance>temp_distance)
+            {
+                cloest_distance = temp_distance;
+                zombie_x = (*it)->getX();
+                zombie_y = (*it)->getY();
+                distance = cloest_distance;
+            }
+        }
+    }
+
+
 }
 
 void StudentWorld::citizenDistanceToPlayer(double citizen_x, double citizen_y, double& player_x, double& player_y, double& distance )
@@ -464,18 +531,6 @@ void StudentWorld::citizenDistanceToPlayer(double citizen_x, double citizen_y, d
     player_y = m_penelope->getY();
     
      distance = pow(player_x - citizen_x, 2) + pow(player_y - citizen_y, 2);
-}
-
-void StudentWorld::citizenDistanceToNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance )
-{
-    vector<Actor*>::iterator it;
-    for (it = m_actors.begin(); it != m_actors.end(); it++)
-    {
-        if((*it)->canBeDamagedByVomit() && (*it)->canBeDamagedByFlame())
-        {
-            distance = pow((*it)->getX() - zombie_x, 2) + pow((*it)->getY() - zombie_y, 2);
-        }
-    }
 }
 
 void StudentWorld::createAZombie(double x, double y)
@@ -555,66 +610,4 @@ void StudentWorld::setGame_info()
     << "  Vaccines: " << setw(2) << m_penelope->get_vaccine() << "  Flames; " << setw(2) << m_penelope->get_flamethrower()
     << "  Mines: " << setw(2) << m_penelope->get_landmines() << "  Infected: " << setw(2) << m_penelope->getInfectedNumber();
     setGameStatText(oss.str());
-}
-
-std::string StudentWorld::check_actorsPos(int x, int y)
-{
-    Level lev(assetPath());
-    ostringstream oss;
-    //oss << "level0" << getLevel() << ".txt";
-    oss << "level0" << 4 << ".txt";
-    string levelFile = oss.str();
-    
-    Level::LoadResult result = lev.loadLevel(levelFile);
-    if (result == Level::load_fail_file_not_found)
-    {
-        return "error";
-    }
-    else if (result == Level::load_fail_bad_format)
-        cerr << "Your level was improperly formatted" << endl;
-    else if (result == Level::load_success)
-    {
-        //cerr << "Successfully loaded level" << endl;
-        Level::MazeEntry ge = lev.getContentsOf(x, y); // level_x=5, level_y=10
-        switch (ge) // so x=80 and y=160
-        {
-            case Level::empty:
-                return "empty";
-                break;
-            case Level::smart_zombie:
-                return "smart_zombie";
-                break;
-            case Level::dumb_zombie:
-                return "dumb_zombie";
-                break;
-            case Level::player:
-                return "player";
-                break;
-            case Level::exit:
-                return "exit";
-                break;
-            case Level::wall:
-                return "wall";
-                break;
-            case Level::pit:
-                return "pit";
-                break;
-            case Level::vaccine_goodie:
-                return "vaccine_goodie";
-                break;
-            case Level::gas_can_goodie:
-                return "gas_can_goodie";
-                break;
-            case Level::landmine_goodie:
-                return "landmine_goodie";
-                break;
-            case Level::citizen:
-                return "citizen";
-                break;
-            default:
-                break;
-        }
-    }
-    
-    return "";
 }

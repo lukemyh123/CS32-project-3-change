@@ -39,9 +39,12 @@ public:
     
     void fire(double x, double y, int dir);
     void compute_vomit(double x, double y, int dir);
-    void searchCloestPeople(double zombie_x, double zombie_y, double& cloest_x, double& cloest_y, double& distance, bool &isThreat);
+    
+    void searchCloestPeople(double x, double y, double& cloest_x, double& cloest_y, double& distance, bool &isThreat);
     void citizenDistanceToPlayer(double citizen_x, double citizen_y, double& player_x, double& player_y, double& distance );
-    void citizenDistanceToNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance );
+   
+    void searchNearestZombie(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance );
+    //void searchNearestHuman(double citizen_x, double citizen_y, double& zombie_x, double& zombie_y, double& distance );
     
     void createAZombie(double x, double y);
     void placeLandmine(double x, double y);
@@ -51,8 +54,6 @@ public:
     void setGame_info();
     Penelope* getPenelope() {return m_penelope;}
     
-    
-    std::string check_actorsPos(int x, int y);
 private:
     std::vector<Actor*> m_actors;
     Penelope* m_penelope;

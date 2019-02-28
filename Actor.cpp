@@ -122,7 +122,130 @@ void Agent::follow_player(double x, double y, double player_x, double player_y, 
             goDown(x, y, pixel);
         }
     }
-   // Zombie::doSomethingVomitCom();
+}
+
+void Agent::runAwayFromZombie(double x, double y, double zombie_x, double zombie_y, int pixel)
+{
+    if (zombie_x == x)
+    {
+        if (zombie_y > y) //run away to down
+        {
+            if (!getWorld()->check_collision(x, y - pixel, pixel, down))
+            {
+                setDirection(down);
+                moveTo(x, y - pixel);
+            }
+        }
+        else if (zombie_y < y)  //run up
+        {
+            if (!getWorld()->check_collision(x, y + pixel, pixel, up))
+            {
+                setDirection(up);
+                moveTo(x, y + pixel);
+            }
+        }
+    }
+    
+    if (zombie_y == y)
+    {
+        if (zombie_x < x)  //run right
+        {
+            if (!getWorld()->check_collision(x + pixel, y, pixel, right))
+            {
+                setDirection(right);
+                moveTo(x + pixel, y);
+            }
+        }
+        else if (zombie_x > x)  //run left
+        {
+            if (!getWorld()->check_collision(x - pixel, y, pixel, left))
+            {
+                setDirection(left);
+                moveTo(x - pixel, y);
+            }
+        }
+    }
+    
+    if (zombie_y > y && zombie_x < x)  //up left
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            if (!getWorld()->check_collision(x + pixel, y, pixel, right))
+            {
+                setDirection(right);
+                moveTo(x + pixel, y);
+            }
+        }
+        else             //vertical
+        {
+            if (!getWorld()->check_collision(x, y - pixel, pixel, down))
+            {
+                setDirection(down);
+                moveTo(x, y - pixel);
+            }
+        }
+    }
+    if (zombie_y > y && zombie_x > x) // up right
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            if (!getWorld()->check_collision(x - pixel, y, pixel, left))
+            {
+                setDirection(left);
+                moveTo(x - pixel, y);
+            }
+        }
+        else             //vertical
+        {
+            if (!getWorld()->check_collision(x, y - pixel, pixel, down))
+            {
+                setDirection(down);
+                moveTo(x, y - pixel);
+            }
+        }
+    }
+    if (zombie_y < y && zombie_x < x) //down left
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            if (!getWorld()->check_collision(x + pixel, y, pixel, right))
+            {
+                setDirection(right);
+                moveTo(x + pixel, y);
+            }
+        }
+        else             //vertical
+        {
+            if (!getWorld()->check_collision(x, y + pixel, pixel, up))
+            {
+                setDirection(up);
+                moveTo(x, y + pixel);
+            }
+        }
+    }
+    if (zombie_y < y && zombie_x > x) // down right
+    {
+        int randDir = randInt(1, 2);
+        if (randDir == 1)  //horizontal
+        {
+            if (!getWorld()->check_collision(x - pixel, y, pixel, left))
+            {
+                setDirection(left);
+                moveTo(x - pixel, y);
+            }
+        }
+        else             //vertical
+        {
+            if (!getWorld()->check_collision(x, y + pixel, pixel, up))
+            {
+                setDirection(up);
+                moveTo(x, y + pixel);
+            }
+        }
+    }
 }
 
 Human::Human(int imageID, double startX, double startY, StudentWorld *this_world)
@@ -141,7 +264,6 @@ void Human::doSomethingCom()
     {
         setDead();
         getWorld()->createAZombie(getX(), getY());
-        getWorld()->playSound(SOUND_ZOMBIE_BORN);
     }
     
 }
@@ -253,16 +375,29 @@ Citizen::Citizen(double startX, double startY, StudentWorld * this_world)
 void Citizen::doSomething()
 {
     Human::doSomethingCom();
+    if(getInfectedNumber() == 500)
+    {
+        getWorld()->playSound(SOUND_ZOMBIE_BORN);
+        getWorld()->increaseScore(-1000);
+    }
+
+    getWorld()->searchNearestZombie(getX(), getY(), zombie_x, zombie_y, distanceFromNearestZombie);
+    getWorld()->citizenDistanceToPlayer(getX(), getY(), player_x, player_y, distanceFromPlayer);
     
     tick++;
     
     if (tick % 2 == 0)
         return;
     
-    getWorld()->citizenDistanceToPlayer(getX(), getY(), cloest_x, cloest_y, distance);
-    if (distance <= 6400)
+    if (distanceFromPlayer < distanceFromNearestZombie && distanceFromPlayer <= 6400)
     {
-        follow_player(getX(), getY(), cloest_x, cloest_y, 2);
+        follow_player(getX(), getY(), player_x, player_y, 2);
+    }
+    
+    if(distanceFromNearestZombie <= 6400)
+    {
+        runAwayFromZombie(getX(), getY(), zombie_x, zombie_y, 2);
+        return;
     }
     
     
@@ -348,7 +483,6 @@ Vaccine_goodie::Vaccine_goodie(double startX, double startY, StudentWorld *this_
 void Vaccine_goodie::doSomething()
 {
     if (Goodie::doSomethingCom())
-        std::cout<< "Vaccine" << std::endl;
         return;
         //Penelope::add_vaccine();
 }
@@ -363,8 +497,6 @@ Gas_can_goodie::Gas_can_goodie(double startX, double startY, StudentWorld *this_
 void Gas_can_goodie::doSomething()
 {
     if (Goodie::doSomethingCom())
-        std::cout<< "Gas_can_goodie" << std::endl;
-
         return;
        // Penelope::add_flamethrower();
 }
@@ -379,8 +511,6 @@ Landmine_goodie::Landmine_goodie(double startX, double startY, StudentWorld *thi
 void Landmine_goodie::doSomething()
 {
     if (Goodie::doSomethingCom())
-        std::cout<< "Landmine_goodie" << std::endl;
-
         return;       //Penelope::add_landmines();
 }
 void Landmine_goodie::pickUp(Penelope *p)
@@ -487,7 +617,7 @@ void Zombie::doSomethingCom()
 
 void Zombie::doSomethingVomitCom()
 {
-    
+
     if (getDirection() == up)
     {
         if (getWorld()->check_personInFront(getX(), getY() + SPRITE_HEIGHT))
@@ -563,6 +693,7 @@ SmartZombie::SmartZombie(double startX, double startY, StudentWorld *this_world)
 void SmartZombie::doSomething()
 {
     getWorld()->searchCloestPeople(getX(), getY(), cloest_x, cloest_y, distance, isThreat);
+    
     if (distance > 6400)
     {
         Zombie::doSomethingCom();
