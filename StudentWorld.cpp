@@ -26,7 +26,7 @@ int StudentWorld::init()
 	Level lev(assetPath());
 	ostringstream oss;
 	oss << "level0" << getLevel() << ".txt";
-	//oss << "level0" << 4 << ".txt";
+	//oss << "level0" << 4 << ".txt"; for testing each level
 	string levelFile = oss.str();
 
 	Level::LoadResult result = lev.loadLevel(levelFile);
@@ -90,7 +90,6 @@ int StudentWorld::init()
 	}
 
 	m_penelope->reset_goodies();
-	increaseScore(-getScore());
 	return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -118,7 +117,10 @@ int StudentWorld::move()
 				num_citizen--;
 			}
 			if ((*it)->isZombie())
+			{
+				(*it)->chanceToCreateVaccine();  //1/10 chance to create a VaccineGoodie
 				playSound(SOUND_ZOMBIE_DIE);
+			}
 			delete *it;
 			it = m_actors.erase(it);
 		}
@@ -386,7 +388,7 @@ void StudentWorld::overlapWithPit(double pit_x, double pit_y)
 					(*it)->score_doSomething();  //-1000
 				}
 				if ((*it)->isZombie())
-					(*it)->score_doSomething();  //-1000 for dumb  -2000 for smart
+					(*it)->score_doSomething();  //1000 for dumb  2000 for smart
 				(*it)->setDead();
 			}
 		}
@@ -526,7 +528,6 @@ void StudentWorld::searchNearestZombie(double citizen_x, double citizen_y, doubl
 	zombie_y = 0;
 	double temp_distance = 0;
 	double cloest_distance = 6400;
-	//distance = 6400;
 	list<Actor*>::iterator it;
 
 	for (it = m_actors.begin(); it != m_actors.end(); it++)

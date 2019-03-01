@@ -457,8 +457,6 @@ Exit::Exit(double startX, double startY, StudentWorld *this_world)
 void Exit::doSomething()
 {
 	getWorld()->Player_overlapWithExit(getX(), getY());   //If the player is overlap with Exit and no more citizen, goes to next level
-	//getWorld()->check_FlameoverlapWithExit(getX(), getY()); //flame overlap with Exit, block flame
-
 	getWorld()->citizen_overlapWithExit(getX(), getY()); //If the citizen are overlap with Eixt, destory them ,and add score
 }
 
@@ -528,7 +526,6 @@ void Vaccine_goodie::doSomething()
 {
 	if (Goodie::doSomethingCom())
 		return;
-	//Penelope::add_vaccine();
 }
 
 void Vaccine_goodie::pickUp(Penelope *p)
@@ -542,7 +539,6 @@ void Gas_can_goodie::doSomething()
 {
 	if (Goodie::doSomethingCom())
 		return;
-	// Penelope::add_flamethrower();
 }
 
 void Gas_can_goodie::pickUp(Penelope *p)
@@ -555,7 +551,7 @@ Landmine_goodie::Landmine_goodie(double startX, double startY, StudentWorld *thi
 void Landmine_goodie::doSomething()
 {
 	if (Goodie::doSomethingCom())
-		return;       //Penelope::add_landmines();
+		return;       
 }
 void Landmine_goodie::pickUp(Penelope *p)
 {

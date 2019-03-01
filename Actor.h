@@ -48,7 +48,6 @@ class Agent : public Actor
 {
 public:
 	Agent(int imageID, double startX, double startY, StudentWorld *this_world);
-	//virtual void doSomething() = 0;
 	virtual bool isBlockActor() { return true; }
 	virtual bool canBeDamagedByFlame() { return true; }
 	virtual bool person() { return true; }
@@ -64,7 +63,7 @@ class Human : public Agent
 {
 public:
 	Human(int imageID, double start_x, double start_y, StudentWorld *this_world);
-	virtual void doSomethingCom();
+	void doSomethingCom();
 	virtual void doSomething() = 0;
 	virtual bool canBeDamagedByVomit() { return true; }
 	virtual bool isHuman() { return true; }
@@ -125,7 +124,7 @@ public:
 private:
 };
 
-class Exit : public Actor  // 3 for Exit
+class Exit : public Actor
 {
 public:
 	Exit(double startX, double startY, StudentWorld *this_world);
@@ -149,7 +148,7 @@ class Projectile :public Actor
 {
 public:
 	Projectile(int imageID, double startX, double startY, StudentWorld *this_world);
-	virtual bool doSomethingCom();
+	bool doSomethingCom();
 	virtual void doSomething() = 0;
 	virtual bool isBlockActor() { return false; }
 	virtual bool canBeDamagedByFlame() { return false; }
@@ -163,8 +162,6 @@ class Flame : public Projectile
 public:
 	Flame(double startX, double startY, StudentWorld *this_world);
 	virtual void doSomething();
-	virtual bool isBlockActor() { return false; }
-	virtual bool canBeDamagedByFlame() { return false; }
 	virtual bool isAFlame() { return true; }
 };
 
@@ -173,8 +170,6 @@ class Vomit : public Projectile
 public:
 	Vomit(double startX, double startY, StudentWorld *this_world);
 	virtual void doSomething();
-	virtual bool isBlockActor() { return false; }
-	virtual bool canBeDamagedByFlame() { return false; }
 	virtual bool isAFlame() { return false; }
 };
 
@@ -182,7 +177,7 @@ class Goodie : public Actor
 {
 public:
 	Goodie(int imageID, double startX, double startY, StudentWorld *this_world);
-	virtual bool doSomethingCom();
+	bool doSomethingCom();
 	virtual void pickUp(Penelope* p) = 0;
 	virtual bool isBlockActor() { return false; }
 	virtual bool isGoodie() { return true; }
@@ -234,8 +229,8 @@ class Zombie : public Agent
 {
 public:
 	Zombie(double startX, double startY, StudentWorld *this_world);
-	virtual void doSomethingCom();
-	virtual void doSomethingVomitCom();
+	void doSomethingCom();
+	void doSomethingVomitCom();
 	virtual void doSomething() = 0;
 	virtual bool isZombie() { return true; }
 private:
