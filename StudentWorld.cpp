@@ -118,7 +118,7 @@ int StudentWorld::move()
 			}
 			if ((*it)->isZombie())
 			{
-				(*it)->chanceToCreateVaccine();  //1/10 chance to create a VaccineGoodie
+				(*it)->chanceToCreateVaccine();  //1/10 chance for dumb zombie to create a VaccineGoodie
 				playSound(SOUND_ZOMBIE_DIE);
 			}
 			delete *it;
@@ -197,25 +197,25 @@ bool StudentWorld::check_collision(double next_x, double next_y, int p, int dir)
 	{
 		if ((*it)->isBlockActor() == true)  //check whether the actors are bounder boxs collision
 		{
-			if (dir == 180)  //1 for left
+			if (dir == 180) 
 			{
 				if (!((*it)->getX() == next_x + p && (*it)->getY() == next_y))
 					if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y, p))
 						return true;
 			}
-			else if (dir == 0)  //2 for right
+			else if (dir == 0)
 			{
 				if (!((*it)->getX() == next_x - p && (*it)->getY() == next_y))               //make sure the blocking objects don't block itself;
 					if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y, p))
 						return true;
 			}
-			else if (dir == 90)  //3 for up
+			else if (dir == 90)
 			{
 				if (!((*it)->getX() == next_x && (*it)->getY() == next_y - p))               //make sure the blocking objects don't block itself;
 					if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y, p))
 						return true;
 			}
-			else if (dir == 270) //4 for down
+			else if (dir == 270)
 			{
 				if (!((*it)->getX() == next_x && (*it)->getY() == next_y + p))               //make sure the blocking objects don't block itself;
 					if (check_collision_helper((*it)->getX(), (*it)->getY(), next_x, next_y, p))

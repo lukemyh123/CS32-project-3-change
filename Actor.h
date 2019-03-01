@@ -232,6 +232,7 @@ public:
 	void doSomethingCom();
 	void doSomethingVomitCom();
 	virtual void doSomething() = 0;
+	virtual void chanceToCreateVaccine() { return; }
 	virtual bool isZombie() { return true; }
 private:
 	int tick;
